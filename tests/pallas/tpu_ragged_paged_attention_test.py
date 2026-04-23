@@ -197,6 +197,26 @@ class RaggedPagedAttentionKernelTest(jtu.JaxTestCase):
         num_pages,
     )
 
+  @parameterized.product(
+      dtype=[jnp.float32, jnp.bfloat16],
+      head_dim=[256, 512],
+  )
+  def test_ragged_paged_attention_large_head_dim(self, dtype, head_dim):
+    seq_lens = [(192, 328), (128, 180), (64, 255)]
+    num_heads = (32, 8)
+    page_size = 16
+    num_pages = 1000
+
+    self._test_ragged_paged_attention(
+        seq_lens,
+        num_heads,
+        head_dim,
+        page_size,
+        dtype,
+        dtype,
+        num_pages,
+    )
+
   # TODO: support int4 and int8
   @parameterized.product(
       q_dtype=[jnp.bfloat16],
