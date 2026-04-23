@@ -375,7 +375,13 @@ def ragged_paged_attention_kernel(
     b_start = start // packing
     b_step = step // packing
     b_ref = ref.bitcast(jnp.uint32)
-    b = b_ref[b_start::b_step, :]
+    if b_ref.shape[-1] <= 128:
+      b = b_ref[b_start::b_step, :]
+    else:
+      num_rows = ref.shape[0] // step
+      b = jnp.stack(
+          [b_ref[b_start + i * b_step, :] for i in range(num_rows)], axis=0
+      )
 
     # TODO(chengjiyao): use the general strided loading logic for bf16 after
     # fixing the issue in mosaic's infer vector layout pass
