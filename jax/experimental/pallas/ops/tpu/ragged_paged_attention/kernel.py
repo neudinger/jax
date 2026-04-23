@@ -361,7 +361,14 @@ def ragged_paged_attention_kernel(
   def strided_load_kv(ref, start, step):
     packing = get_dtype_packing(ref.dtype)
     if packing == 1:
-      return [ref[start::step, :]], [ref[start + 1 :: step, :]]
+      if ref.shape[-1] <= 128:
+        return [ref[start::step, :]], [ref[start + 1 :: step, :]]
+      num_rows = ref.shape[0] // step
+      k = jnp.stack([ref[start + i * step, :] for i in range(num_rows)], axis=0)
+      v = jnp.stack(
+          [ref[start + 1 + i * step, :] for i in range(num_rows)], axis=0
+      )
+      return [k], [v]
     assert packing in (2, 4, 8)
     assert step % packing == 0
     k_list, v_list = [], []
